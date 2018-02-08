@@ -913,6 +913,24 @@ class RendermanSceneSettings(bpy.types.PropertyGroup):
         name="Use GPU for denoising",
         description="The denoiser will attempt to use the GPU (if available)",
         default=True)
+        
+    overscan_mode = EnumProperty(
+        name="Overscan Mode",
+        description="How to apply overscan when rendering.",
+        items=[('fs', 'Full-Size Render Only', 'Only add overscan when resolution percentage at 100%'),
+               ('rs', 'Relative-Size Overscan', 'Scale the overscan according to resolution percentage'),
+               ('as', 'Absolute-Size Overscan', 'Use the overscan, ignoring the resolution percentage')],
+        default='fs')
+        
+    overscan_width = IntProperty(
+        name="Horizontal Overscan",
+        description="Amount of extra pixels added to each side of the image horizontally. Overscan is only done on External Rendering.",
+        min=0, default=0)
+        
+    overscan_height = IntProperty(
+        name="Vertical Overscan",
+        description="Amount of extra pixels added to each side of the image vertically. Overscan is only done on External Rendering.",
+        min=0, default=0)
 
     external_animation = BoolProperty(
         name="Render Animation",

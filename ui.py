@@ -354,6 +354,13 @@ class RENDER_PT_renderman_spooling(PRManButtonsPanel, Panel):
                 row = col.row()
                 row.enabled = rm.external_denoise and not rm.spool_denoise_aov
                 row.prop(rm, "denoise_gpu")
+                
+                # overscan
+                col = layout.column()
+                col.prop(rm, 'overscan_mode')
+                row = col.row()
+                row.prop(rm, 'overscan_width')
+                row.prop(rm, 'overscan_height')
 
                 # checkpointing
                 col = layout.column()

@@ -2697,6 +2697,13 @@ def render_get_aspect(r, camera=None):
 
     return xaspect, yaspect, aspectratio
 
+def get_overscan_values (rx, ry, osx, osy):
+    newx = rx + (math.ceil(osx)*2)
+    newy = ry + (math.ceil(osy)*2)
+    overscanx = (newx / rx)
+    overscany = (newy / ry)
+    return newx, newy, overscanx, overscany
+    
 
 def export_render_settings(ri, rpass, scene, preview=False):
     rm = scene.renderman
@@ -2753,7 +2760,7 @@ def export_camera_matrix(ri, scene, ob, motion_data=[]):
     export_motion_end(ri, motion_data)
 
 
-def export_camera(ri, scene, instances, camera_to_use=None):
+def export_camera(ri, scene, instances, camera_to_use=None, rpass=None):
     r = scene.render
     if camera_to_use:
         ob = camera_to_use
@@ -2795,6 +2802,25 @@ def export_camera(ri, scene, instances, camera_to_use=None):
     if scene.render.use_border and not scene.render.use_crop_to_border:
         ri.CropWindow(scene.render.border_min_x, scene.render.border_max_x,
                       1.0 - scene.render.border_min_y, 1.0 - scene.render.border_max_y)
+
+                        
+    resolution = render_get_resolution(scene.render)
+    resolution_percent = scene.render.resolution_percentage * 0.01
+    overscanx = overscany = 1
+    newresx = resolution[0]
+    newresy = resolution[1]
+    # overscan
+    if rpass is not None:
+        if rpass.external_render:
+            if (rm.overscan_mode == 'fs' and resolution_percent == 1) or rm.overscan_mode == 'as':
+                newresx, newresy, overscanx, overscany = get_overscan_values(resolution[0], resolution[1], rm.overscan_width, rm.overscan_height)
+            elif rm.overscan_mode == 'rs':
+                overscan_width = rm.overscan_width * resolution_percent
+                overscan_height = rm.overscan_height * resolution_percent
+                newresx, newresy, overscanx, overscany = get_overscan_values(resolution[0], resolution[1], overscan_width, overscan_height)
+    xaspect *= overscanx
+    yaspect *= overscany
+   
 
     if cam.renderman.projection_type != 'none':
         # use pxr Camera
@@ -2840,7 +2866,7 @@ def export_camera(ri, scene, instances, camera_to_use=None):
             ri.ScreenWindow(-1, 1, -1, 1)
         else:
             ri.ScreenWindow(-xaspect, xaspect, -yaspect, yaspect)
-        ri.Format(resolution[0], resolution[1], 1.0)
+        ri.Format(newresx, newresy, 1.0)
 
     export_camera_matrix(ri, scene, ob, motion)
 
@@ -3444,7 +3470,7 @@ def write_rib(rpass, scene, ri, visible_objects=None, engine=None, do_objects=Tr
     ri.FrameBegin(scene.frame_current)
 
     if not rpass.bake:
-        export_camera(ri, scene, instances)
+        export_camera(ri, scene, instances, rpass=rpass)
         export_render_settings(ri, rpass, scene)
 
     # export_global_illumination_settings(ri, rpass, scene)
